@@ -1,1 +1,13 @@
 
+[package]
+name = "solana-restaurant-review"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+borsh = "0.10.4"
+solana-program = "1.18.26"
