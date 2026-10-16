@@ -21,6 +21,7 @@ impl Processor {
         input: &[u8],
     ) -> ProgramResult {
         let instruction = ReviewInstruction::unpack(input)?;
+
         let account_iter = &mut accounts.iter();
         let account = next_account_info(account_iter)?;
 
@@ -34,11 +35,17 @@ impl Processor {
 
         let state = match instruction {
             ReviewInstruction::Add(payload) => {
-                if account.data_is_empty()
-                    || account.try_borrow_data()?.iter().any(|b| *b != 0)
-                {
+                let data = account.try_borrow_data()?;
+
+                if data.is_empty() {
+                    return Err(ProgramError::AccountDataTooSmall);
+                }
+
+                if data.iter().any(|byte| *byte != 0) {
                     return Err(ProgramError::AccountAlreadyInitialized);
                 }
+
+                drop(data);
 
                 AccountState {
                     title: payload.title,
@@ -47,10 +54,19 @@ impl Processor {
                     description: payload.description,
                 }
             }
+
             ReviewInstruction::Update(payload) => {
                 {
                     let data = account.try_borrow_data()?;
+
+                    if data.is_empty()
+                        || data.iter().all(|byte| *byte == 0)
+                    {
+                        return Err(ProgramError::UninitializedAccount);
+                    }
+
                     let mut bytes: &[u8] = &data;
+
                     AccountState::deserialize(&mut bytes)
                         .map_err(|_| ProgramError::UninitializedAccount)?;
                 }
@@ -79,4 +95,4 @@ impl Processor {
 
         Ok(())
     }
-              }
+}
