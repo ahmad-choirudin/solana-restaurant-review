@@ -1,56 +1,50 @@
-Solana Restaurant Review
+# Solana Restaurant Review
 
-Overview
+A Solana program (Rust, native `solana-program`) that stores restaurant reviews on-chain. Instructions and account state use Borsh.
 
-Solana Restaurant Review is a Solana program written in Rust for storing restaurant reviews on-chain.
+## Features
 
-Each review includes a title, location, rating, and description.
+- `Add` a review (title, location, rating, description).
+- `Update` an existing review. Only the wallet that added it can update it.
+- Validation: rating must be 1 to 5; title and location up to 100 bytes; description up to 1000 bytes.
 
-Features
+## Instruction accounts
 
-- Add a restaurant review.
-- Update an existing review.
-- Store the restaurant's location alongside other review data.
-- Serialize instructions and account state using Borsh.
+| # | Account | Requirements |
+| --- | --- | --- |
+| 0 | Review author | Signer |
+| 1 | Review account | Writable, owned by this program, allocated with at least `AccountState::MAX_SIZE` bytes (1246) |
 
-Review Fields
+## Account state
 
-- "title": Restaurant name or review title.
-- "location": Restaurant location.
-- "rating": Numeric rating from the client.
-- "description": Written review of the restaurant.
+`is_initialized`, `initializer` (author's public key, 32 bytes), `title`, `location`, `rating`, `description`.
 
-Requirements
+A freshly allocated zero-filled account decodes as not initialized, so `Add` works once and `Update` is rejected until then.
 
-- Rust and Cargo
-- Solana development tools
-- A Solana wallet and test SOL for testnet deployment
+## Custom errors
 
-Build and Test
+| Code | Meaning |
+| --- | --- |
+| 0 | Invalid rating (not 1 to 5) |
+| 1 | Title too long |
+| 2 | Location too long |
+| 3 | Description too long |
+| 4 | Unauthorized (not the original author) |
 
-Run these commands from the project directory:
+## Build and test
 
+```bash
 cargo check
 cargo test
+```
 
-A successful build does not replace integration testing. Test both Add and Update instructions before deployment.
+Build for deployment with your Solana CLI's SBF tool (for example `cargo build-sbf`), deploy to Devnet, and record the program ID. Unit tests do not replace integration tests on a real cluster.
 
-Deployment Guide
+## Limitations
 
-1. Configure the Solana CLI to use Devnet.
-2. Build the program using the SBF build tool supported by your Solana installation.
-3. Deploy the compiled program to Devnet.
-4. Record the deployed program ID.
-5. Use a client that serializes "ReviewInstruction" with Borsh to interact with the program.
+- There is no account-creation instruction; the client must create and allocate the review account first. A PDA derived from the author and title would be a better design.
+- Not audited. Use test networks only.
 
-Account Requirements
-
-The review account must be created and allocated before calling the program. It must be owned by this program, writable, and large enough to store the serialized review data.
-
-Limitations
-
-This project is a learning starter and has not been audited. It does not include a frontend, account-creation instruction, or integration tests. Additional validation and testing are needed before production use.
-
-License
+## License
 
 MIT
